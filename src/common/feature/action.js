@@ -1,9 +1,13 @@
-export const FETCH_SOME_DATA = "fetch_some_data";
+export const FETCH_SOME_DATA = 'fetch_some_data';
+
+const { dump } = require('dumper.js');
+
 export const fetchData = () => async (dispatch, getState, api) => {
-  const response = await api.get("/api/endpoint");
+  dump(api);
+  const response = await api.get('/users');
 
   dispatch({
     type: FETCH_SOME_DATA,
-    payload: response
+    payload: response.data
   });
 };

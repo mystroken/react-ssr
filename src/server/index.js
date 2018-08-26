@@ -1,63 +1,72 @@
-import "babel-polyfill";
-import express from "express";
-import proxy from "express-http-proxy";
-import { matchRoutes } from "react-router-config";
-import Routes from "../common/routes";
-import renderer from "./renderer";
-import createStore from "./createStore";
+import 'babel-polyfill';
+import express from 'express';
+import proxy from 'express-http-proxy';
+import { matchRoutes } from 'react-router-config';
+import Routes from '../common/routes';
+import renderer from './renderer';
+import createStore from './createStore';
+import {
+  API_HOST,
+  API_PATH,
+  HOST,
+  PORT
+} from '../common/shared/constants';
 
-import { API_URL, HOST, PORT } from "../common/shared/constants";
 
 const app = express();
 
-app.use(
-	"/api/",
-	proxy(API_URL, {
-		proxyReqOptDecorator: function(proxyReqOpts, srcReq) {
-			proxyReqOpts.headers["X-Forwarded-Host"] = "localhost:3000";
-			return proxyReqOpts;
-		},
+app.use('/api/',
+  proxy(API_HOST, {
 
-		proxyReqPathResolver: function(req) {
-			return "/api/v1" + require("url").parse(req.url).path;
-		}
-	})
-);
-app.use(express.static("public"));
+    proxyReqOptDecorator: (proxyReqOpts) => {
+      proxyReqOpts.headers['X-Forwarded-Host'] = `${HOST}:${PORT}`; // eslint-disable-line
+      return proxyReqOpts;
+    },
 
-app.get("*", (req, res) => {
-	const store = createStore(req);
+    proxyReqPathResolver: (req) => {
+      const urlPath = /^\//.test(API_PATH) ? API_PATH.slice(0, -1) : API_PATH;
+      return `${urlPath}${require('url').parse(req.url).path}`;
+    }
 
-	const promises = matchRoutes(Routes, req.path)
-		.map(({ route }) => {
-			return route.loadData ? route.loadData(store) : null;
-		})
-		.map(promise => {
-			if (promise) {
-				return new Promise((resolve, reject) => {
-					promise.then(resolve).catch(resolve);
-				});
-			}
-		});
+  }));
 
-	Promise.all(promises).then(() => {
-		const context = {};
-		const content = renderer(req, store, context);
+app.use(express.static('public'));
 
-		if (context.notFound) {
-			res.status(404);
-		}
+app.get('*', (req, res) => {
+  const store = createStore(req);
+  const matchingRoutes = matchRoutes(Routes, req.path);
 
-		if (context.url) {
-			return res.redirect(301, context.url);
-		}
+  const promises = matchingRoutes
+    .map(({ route }) => {
+      return route.loadData
+        ? route.loadData(store)
+        : Promise.resolve(null);
+    })
+    .map((promise) => { // eslint-disable-line
+      if (promise) {
+        return new Promise((resolve) => {
+          promise.then(resolve).catch(resolve);
+        });
+      }
+    });
 
-		res.send(content);
-	});
+  Promise.all(promises).then(() => {
+    const context = {};
+    const content = renderer(req, store, context);
+
+    if (context.notFound) {
+      res.status(404);
+    }
+
+    if (context.url) {
+      return res.redirect(301, context.url);
+    }
+
+    return res.send(content);
+  });
 });
 
 
-
 app.listen(PORT, HOST, () => {
-	console.log(`Listening ${HOST} : ${PORT}`);
+  console.log(`Listening ${HOST} : ${PORT}`); // eslint-disable-line
 });
