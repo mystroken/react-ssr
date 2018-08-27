@@ -23,6 +23,7 @@ class Feature extends Component {
   render() {
     return (
       <div>
+        <h3>Fetching some data</h3>
         { this.renderUsersList() }
       </div>
     );
