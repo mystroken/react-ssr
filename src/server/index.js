@@ -24,7 +24,7 @@ app.use('/api/',
     },
 
     proxyReqPathResolver: (req) => {
-      const urlPath = /^\//.test(API_PATH) ? API_PATH.slice(0, -1) : API_PATH;
+      const urlPath = /\/$/.test(API_PATH) ? API_PATH.slice(0, -1) : API_PATH;
       return `${urlPath}${require('url').parse(req.url).path}`;
     }
 
