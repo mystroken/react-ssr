@@ -10,7 +10,7 @@ import {
 } from '../common/shared/constants';
 
 export default (req) => {
-  const baseURL = new URL(API_PATH, API_HOST).toString().slice(0, -1);
+  const baseURL = new URL(API_PATH, API_HOST).toString();
   const axiosInstance = axios.create({
     baseURL,
     headers: { cookie: req.get('cookie') || '' }
